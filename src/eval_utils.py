@@ -32,3 +32,16 @@ def build_comparison_table(results: dict) -> pd.DataFrame:
     for model_name, res in results.items():
         rows.append({"Model": model_name, **res["metrics"], "Training Time (s)": res.get("train_time_sec")})
     return pd.DataFrame(rows).sort_values("MAE").reset_index(drop=True)
+
+def segment_mae_table(df, segment_col, actual_col, pred_cols: dict) -> pd.DataFrame:
+    """
+    pred_cols: {"ModelName": "pred_column_name"}
+    Returns MAE per segment per model, plus segment row counts.
+    """
+    rows = []
+    for segment, group in df.groupby(segment_col, observed=True):
+        row = {segment_col: segment, "count": len(group)}
+        for model_name, pred_col in pred_cols.items():
+            row[f"MAE_{model_name}"] = (group[actual_col] - group[pred_col]).abs().mean()
+        rows.append(row)
+    return pd.DataFrame(rows).sort_values(segment_col).reset_index(drop=True)
